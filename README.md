@@ -8,19 +8,19 @@ so this repo provides a reliable clock using GitHub-only features.
 
 | Period | Dispatch `pvhp-tick` |
 |--------|----------------------|
-| **06:00–21:59** | every **:04** and **:34** (~32/day) |
-| **22:00–05:59** | only **:04** at **22, 00, 02, 04** (~4/night) |
+| **06:00–21:59** | every **:00** and **:30** (~32/day) |
+| **22:00–05:59** | only **:00** at **22, 00, 02, 04** (~4/night) |
 
 The relay chain still wakes ~every 30 min (public repo, free minutes), but **pvhp-tick is
-not dispatched** on skipped slots (e.g. night :34, 01:04, 03:04) — that saves **private**
+not dispatched** on skipped slots (e.g. night :30, 01:00, 03:00) — that saves **private**
 Actions minutes.
 
 ## How it works
 - `relay.yml` (workflow_dispatch only): environment `half-hour` wait **24 min** (unbilled),
-  align to **:04 / :34 Warsaw**, dispatch successor, then **`dispatch_gate.py`** decides
+  align to **:00 / :30 Warsaw**, dispatch successor, then **`dispatch_gate.py`** decides
   whether to dispatch `pvhp-tick.yml` in the private repo (`PVHP_DISPATCH_TOKEN`).
 - `kick.yml` (cron `17 */2 * * *`): restarts the relay chain if it died; fails if the
-  private tick has not run for **>2.5 h** (covers 04:04→06:04 gap). Until
+  private tick has not run for **>2.5 h** (covers 04:00→06:00 gap). Until
   `PVHP_DISPATCH_TOKEN` is set it only warns.
 - Public-repo relay minutes are free; the private repo pays ~**1 min per dispatched tick**
   (~**36/min/day** target ≈ **1080/month**).

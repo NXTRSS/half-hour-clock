@@ -1,6 +1,6 @@
 name: relay
 # Self-dispatching clock for pvhp-tick. Environment wait 24 min (unbilled) + align to
-# :04/:34 Europe/Warsaw. Dispatches private pvhp only on day/night cadence (see dispatch_gate.py).
+# :00/:30 Europe/Warsaw. Dispatches private pvhp only on day/night cadence (see dispatch_gate.py).
 on:
   workflow_dispatch:
 
@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Align to next :04 / :34 Europe/Warsaw (max 15 min)
+      - name: Align to next :00 / :30 Europe/Warsaw (max 15 min)
         run: |
           wait=$(python3 .github/scripts/align_wait_seconds.py)
           echo "sleep ${wait}s (Warsaw slot)"
