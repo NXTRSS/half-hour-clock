@@ -1,7 +1,6 @@
 name: relay
-# Self-dispatching 30-min clock. The 24-min wait is an environment wait timer
-# (not billed, no runner held). Each cycle: wait -> align to :04/:34 UTC ->
-# dispatch successor (GITHUB_TOKEN) -> dispatch private pvhp tick (PAT).
+# Self-dispatching clock for pvhp-tick. Environment wait 24 min (unbilled) + align to
+# :04/:34 Europe/Warsaw. Dispatches private pvhp only on day/night cadence (see dispatch_gate.py).
 on:
   workflow_dispatch:
 
@@ -19,14 +18,13 @@ jobs:
     environment: half-hour          # wait timer 24 min, branch main only
     timeout-minutes: 20
     steps:
-      - name: Align to next :04 / :34 UTC (max 15 min)
+      - uses: actions/checkout@v4
+
+      - name: Align to next :04 / :34 Europe/Warsaw (max 15 min)
         run: |
-          now=$(date -u +%s)
-          m=$(( (now / 60) % 30 )); s=$(( now % 60 ))
-          wait=$(( ((4 - m + 30) % 30) * 60 - s ))
-          [ "$wait" -lt 0 ] && wait=$(( wait + 1800 ))
-          [ "$wait" -gt 900 ] && wait=0   # just past a slot -> fire now
-          echo "sleep ${wait}s"; sleep "$wait"
+          wait=$(python3 .github/scripts/align_wait_seconds.py)
+          echo "sleep ${wait}s (Warsaw slot)"
+          [ "$wait" -gt 0 ] && sleep "$wait"
 
       - name: Dispatch successor (keeps the chain alive)
         if: always()
@@ -39,12 +37,16 @@ jobs:
           done
           echo "::error::could not dispatch successor"; exit 1
 
-      - name: Dispatch pvhp tick (private repo)
+      - name: Dispatch pvhp tick (private repo, cadence gate)
         if: always()
         env:
           GH_TOKEN: ${{ secrets.PVHP_DISPATCH_TOKEN }}
           TARGET: ${{ secrets.PVHP_TARGET_REPO }}
         run: |
+          if ! python3 .github/scripts/dispatch_gate.py; then
+            echo "skip pvhp-tick dispatch (cadence — saves private Actions minutes)"
+            exit 0
+          fi
           for i in 1 2 3 4 5; do
             gh workflow run pvhp-tick.yml -R "$TARGET" --ref main >/dev/null 2>&1 && { echo "tick dispatched"; exit 0; }
             sleep $(( i * 10 ))

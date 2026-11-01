@@ -37,4 +37,5 @@ jobs:
           if [ -z "$last" ]; then echo "::error::cannot read tick runs"; exit 1; fi
           age=$(( $(date -u +%s) - $(date -u -d "$last" +%s) ))
           echo "last tick ${age}s ago"
-          if [ "$age" -gt 3600 ]; then echo "::error::no pvhp tick for ${age}s"; exit 1; fi
+          # Max gap on schedule: 04:04 → 06:04 Warsaw = 2 h; use 2.5 h threshold
+          if [ "$age" -gt 9000 ]; then echo "::error::no pvhp tick for ${age}s"; exit 1; fi
